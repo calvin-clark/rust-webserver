@@ -15,24 +15,6 @@ fn main() {
     let pool = ThreadPool::new(4);
     let m = Arc::new(Mutex::new(true));
 
-    //Test code
-    //let mut counter = 0;
-
-    //for stream in listener.incoming() {
-    //    if counter == 2 {
-    //        println!("Shutting down.");
-    //        break;
-    //    }
-
-    //    counter += 1;
-
-    //    let stream = stream.unwrap();
-
-    //    pool.execute(|| {
-    //        handle_connection(stream);
-    //    });
-    //}
-
     let arc = m.clone();
     ctrlc::set_handler(move || { 
         let mut value = arc.lock().unwrap();
@@ -62,9 +44,10 @@ fn handle_connection(mut stream: TcpStream) {
     stream.read(&mut buffer).unwrap();
 
     let get = b"GET / HTTP/1.1\r\n";
+    let home = b"GET /home HTTP/1.1\r\n";
     let sleep = b"GET /sleep HTTP/1.1\r\n";
 
-    let (status_line, filename) = if buffer.starts_with(get) {    
+    let (status_line, filename) = if buffer.starts_with(get) || buffer.starts_with(home) {    
         ("HTTP/1.1 200 OK\r\n\r\n", "hello.html")
     } else if buffer.starts_with(sleep) {
         thread::sleep(Duration::from_secs(5));

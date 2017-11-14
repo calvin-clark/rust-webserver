@@ -58,7 +58,7 @@ impl ThreadPool {
     {
         let job = Box::new(f);
 
-        self.sender.send(Message::NewJob(job)).unwrap();
+        self.sender.send(Message::NewJob(job)).expect("Worker did not successfully receive new job");
     }
 }
 
@@ -67,7 +67,7 @@ impl Drop for ThreadPool {
         println!("Sending terminate message to all workers.");
 
         for _ in &mut self.workers {
-            self.sender.send(Message::Terminate).unwrap();
+            self.sender.send(Message::Terminate).expect("Worker did not successfully terminate");
         }
 
         println!("Shutting down all workers.");
@@ -76,7 +76,7 @@ impl Drop for ThreadPool {
             println!("Shutting down worker {}", worker.id);
 
             if let Some(thread) = worker.thread.take() {
-                thread.join().unwrap();
+                thread.join().expect("Thread did not successfully join");
             }
         }
     }
@@ -91,7 +91,8 @@ impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
         let thread = thread::spawn(move || {
             loop {
-                let message = receiver.lock().unwrap().recv().unwrap();
+                let message = receiver.lock().expect("receiver channel was already in use when accessed by Worker")
+                    .recv().expect("Worker could not receive message from channel");
                 match message {
                     Message::NewJob(job) => {
                         println!("Worker {} got a job; executing.", id);

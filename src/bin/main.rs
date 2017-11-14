@@ -11,13 +11,13 @@ use std::sync::{Mutex, Arc};
 use std::process;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8080").expect("invalid TcpListener binding");
     let pool = ThreadPool::new(4);
     let m = Arc::new(Mutex::new(true));
 
     let arc = m.clone();
     ctrlc::set_handler(move || { 
-        let mut value = arc.lock().unwrap();
+        let mut value = arc.lock().expect("value was in use when accessed by ctrlc handler");
         println!("Shutting down.");
         *value = false;
     }).expect("Error setting Ctrl+C handler");
@@ -25,7 +25,7 @@ fn main() {
     
     for stream in listener.incoming() {
         let a = m.clone();
-        let value = a.lock().unwrap();
+        let value = a.lock().expect("value was in use when accessed by for loop");
         if *value == false{
             break;
         }
@@ -41,7 +41,7 @@ fn main() {
 
 fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 512];
-    stream.read(&mut buffer).unwrap();
+    stream.read(&mut buffer).expect("error reading stream");
 
     let get = b"GET / HTTP/1.1\r\n";
     let home = b"GET /home HTTP/1.1\r\n";
@@ -56,13 +56,13 @@ fn handle_connection(mut stream: TcpStream) {
         ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
     };
 
-    let mut file = File::open(filename).unwrap();
+    let mut file = File::open(filename).expect("error opening HTML file");
 
     let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
+    file.read_to_string(&mut contents).expect("error reading HTML file to string");
 
     let response = format!("{}{}", status_line, contents);
 
-    stream.write(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+    stream.write(response.as_bytes()).expect("error writing to stream");
+    stream.flush().expect("error flushing stream");
 }

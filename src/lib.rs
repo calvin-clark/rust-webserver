@@ -88,6 +88,13 @@ struct Worker {
 }
 
 impl Worker {
+    /// Create a new Worker.
+    ///
+    /// The id is the identifier of the current worker and the receiver is the receiver stream.
+    ///
+    /// # Panics
+    ///
+    /// the new! function will panic if the receiver channel is in use or cannot receiver a message
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
         let thread = thread::spawn(move || {
             loop {

@@ -11,13 +11,13 @@ use std::sync::{Mutex, Arc};
 use std::process;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").expect("invalid TcpListener binding");
+    let listener = TcpListener::bind("127.0.0.1:8080").expect("invalid port binding");
     let pool = ThreadPool::new(4);
     let m = Arc::new(Mutex::new(true));
 
-    let arc = m.clone();
+    let looper = m.clone();
     ctrlc::set_handler(move || { 
-        let mut value = arc.lock().expect("value was in use when accessed by ctrlc handler");
+        let mut value = looper.lock().expect("looper mutex was in use when accessed by ctrlc handler");
         println!("Shutting down.");
         *value = false;
     }).expect("Error setting Ctrl+C handler");
@@ -25,7 +25,7 @@ fn main() {
     
     for stream in listener.incoming() {
         let a = m.clone();
-        let value = a.lock().expect("value was in use when accessed by for loop");
+        let value = a.lock().expect("value mutex was in use when accessed by for loop");
         if *value == false{
             break;
         }
